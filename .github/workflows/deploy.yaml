@@ -1,0 +1,42 @@
+name: Deploy to Local Minikube on EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Start Minikube if not running
+      run: |
+        if ! minikube status | grep -q "Running"; then
+          minikube start --driver=docker --memory=1024 --cpus=1
+        fi
+
+    - name: Set Docker Env to Minikube
+      run: |
+        eval $(minikube docker-env)
+
+    - name: Build Flask App Image
+      run: |
+        eval $(minikube docker-env)
+        docker build -t flask-app:latest ./app
+
+    - name: Apply ConfigMaps & Secrets
+      run: |
+        kubectl apply -f manifests/configmap/
+        kubectl apply -f manifests/secret/
+
+    - name: Deploy PostgreSQL & Flask App
+      run: |
+        kubectl apply -f manifests/deployment/
+        kubectl apply -f manifests/service/
+
+    - name: Check Kubernetes Resources
+      run: kubectl get all
