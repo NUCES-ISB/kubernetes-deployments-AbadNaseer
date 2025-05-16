@@ -18,12 +18,14 @@ jobs:
         if ! minikube status | grep -q "Running"; then
           minikube start --driver=docker --memory=1024 --cpus=1
         fi
+        minikube status
 
     - name: Set Docker Env to Minikube
       run: |
         eval $(minikube docker-env)
+        docker info
 
-    - name: Build Flask App Image
+    - name: Build Flask App Image inside Minikube Docker
       run: |
         eval $(minikube docker-env)
         docker build -t flask-app:latest ./app
@@ -38,5 +40,6 @@ jobs:
         kubectl apply -f manifests/deployment/
         kubectl apply -f manifests/service/
 
-    - name: Check Kubernetes Resources
-      run: kubectl get all
+    - name: Show Kubernetes Resources
+      run: |
+        kubectl get all
